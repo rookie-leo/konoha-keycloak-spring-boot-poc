@@ -1,0 +1,50 @@
+name: konoha-poc
+
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: rhbk
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - dados:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "rhbk"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  seed:
+    image: postgres:17
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGUSER: postgres
+      PGDATABASE: rhbk
+      PGPASSWORD: password
+    volumes:
+      - ./konoha.sql:/seed/konoha.sql:ro
+    command: ["psql", "-X", "-v", "ON_ERROR_STOP=1", "-f", "/seed/konoha.sql"]
+
+  rhbk:
+    image: quay.io/keycloak/keycloak:26.8.2
+    command: ["start-dev"]
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/rhbk
+      KC_DB_USERNAME: rhbk_app
+      KC_DB_PASSWORD: rhbk-local
+      KC_HOSTNAME: http://localhost:8081
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin-local
+    ports:
+      - "127.0.0.1:8081:8080"
+
+volumes:
+  dados:
