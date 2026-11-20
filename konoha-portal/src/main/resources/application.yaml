@@ -1,3 +1,19 @@
+server:
+  port: 8080
+
 spring:
   application:
     name: konoha-portal
+  security:
+    oauth2:
+      client:
+        provider:
+          rhbk:
+            issuer-uri: http://localhost:8081/realms/konoha
+        registration:
+          rhbk:
+            provider: rhbk
+            client-id: portal-konoha
+            client-secret: ${PORTAL_CLIENT_SECRET}
+            authorization-grant-type: authorization_code
+            scope: openid,profile
